@@ -361,22 +361,22 @@
         </property>
         <item>
          <property name="text">
-          <string>ft Above Mean Sea Level (ft AMSL)</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
           <string>ft Above Ground Level (ft AGL)</string>
          </property>
         </item>
         <item>
          <property name="text">
-          <string>m Above Mean Sea Level (m AMSL)</string>
+          <string>m Above Ground Level (m AGL)</string>
          </property>
         </item>
         <item>
          <property name="text">
-          <string>m Above Ground Level (m AGL)</string>
+          <string>ft Above Mean Sea Level (ft AMSL)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>m Above Mean Sea Level (m AMSL)</string>
          </property>
         </item>
        </widget>
@@ -402,7 +402,7 @@
          <double>0.100000000000000</double>
         </property>
         <property name="value">
-         <double>48.500000000000000</double>
+         <double>60.000000000000000</double>
         </property>
        </widget>
       </item>

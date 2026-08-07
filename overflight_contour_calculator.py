@@ -37,6 +37,7 @@ from qgis.core import (
     QgsSettings,
     QgsWkbTypes,
     QgsMessageLog,
+    QgsMapLayerProxyModel,
     Qgis
 )
 from PyQt5.QtCore import QVariant
@@ -202,16 +203,16 @@ class OverflightContourCalculator:
             self.first_start = False
             self.dlg = OCCDialog()
 
+            # only allow vect/rast as input lyrs
+            self.dlg.aircraft_track_data.setFilters(QgsMapLayerProxyModel.LineLayer)
+            self.dlg.dem.setFilters(QgsMapLayerProxyModel.RasterLayer)
+
         # show the dialog
         self.dlg.show()
         # Run the dialog event loop
         result = self.dlg.exec_()
 
         if result:
-
-
-
-
 
             # INPUTS FROM UI
 
@@ -223,7 +224,7 @@ class OverflightContourCalculator:
                 "mi": 1609.344,
                 "km": 1000
             }
-
+            
             track_layer = self.dlg.aircraft_track_data.currentLayer()
             if track_layer:
                 # check if track data has altitude values 
@@ -265,15 +266,25 @@ class OverflightContourCalculator:
                 output_type = "points"
 
             contour_thresholds = self.dlg.contour_thresholds.text()
-            contour_thresholds = contour_thresholds.replace(',', ' ').strip()
+            # ['10', '50', '100']
+            contour_thresholds = contour_thresholds.replace(',', ' ').split()
+            # string for GDAL "10 50 100"
+            contour_thresholds = ' '.join(contour_thresholds)
 
             output_proj = self.dlg.output_projection.crs()
-            output_proj_epsg = output_proj.authid()
+            # output_proj_epsg = output_proj.authid()
             if output_proj.isGeographic():
                 QgsMessageLog.logMessage("Error: Output CRS must be projected, not geographic (degrees)", "Overflight Contour Calculator", Qgis.Critical)
                 return
 
             extent = self.dlg.extent.outputExtent()
+            # buffer extent to fix pixel shift in interpolation
+            half_pixel = grid_size / 2.0
+            x_min = extent.xMinimum() - half_pixel
+            x_max = extent.xMaximum() + half_pixel
+            y_min = extent.yMinimum() - half_pixel
+            y_max = extent.yMaximum() + half_pixel
+            buf_extent = f"{x_min},{x_max},{y_min},{y_max}"
 
             QgsMessageLog.logMessage("CALCULATION STARTED WITH THE FOLLOWING PARAMS:", "Overflight Contour Calculator", Qgis.Success)
             log_msg = ("\nTrack Layer: " + str(track_layer)
@@ -287,7 +298,7 @@ class OverflightContourCalculator:
                    + "\nAltitude Ceiling: " + str(alt_ceil)
                    + "\nGrid Size (m): " + str(grid_size)
                    + "\nOutput Type: " + str(output_type)
-                   + "\nContour thersholds (≤): " + str(contour_thresholds)
+                   + "\nContour thresholds (≤): " + str(contour_thresholds)
                    + "\nOutput Projection: " + str(output_proj)
                    + "\nCalculation Extent: " + str(extent))
             QgsMessageLog.logMessage(log_msg, "Overflight Contour Calculator", Qgis.Info)
@@ -301,7 +312,7 @@ class OverflightContourCalculator:
             # generate observer point grid
             parameters = {
                 'TYPE': 0,
-                'EXTENT': extent,
+                'EXTENT': buf_extent,
                 'HSPACING': grid_size,
                 'VSPACING': grid_size,
                 'HOVERLAY': 0,
@@ -493,7 +504,7 @@ class OverflightContourCalculator:
 
                 # add grid to project if wanted
                 if output_type in ["both", "points"]:
-                    grid_with_alt.setName("OCC_observer_point_grid")
+                    grid_with_alt.setName("OCC_obs_pt_grid")
                     QgsProject.instance().addMapLayer(grid_with_alt)
 
 
@@ -507,7 +518,7 @@ class OverflightContourCalculator:
                 rasterize_params = {
                     'INPUT': grid_with_alt,
                     'FIELD': 'OFCOUNT',
-                    'UNITS': 1, # 1 = georeferenced units
+                    'UNITS': 1, # 1=georeferenced units
                     'WIDTH': grid_size,
                     'HEIGHT': grid_size,
                     'EXTENT': extent,
@@ -555,7 +566,8 @@ class OverflightContourCalculator:
                 }
                 filter_result = processing.run("native:extractbyexpression", filter_params)
                 
-                # 7. OPTIONAL: Load the raw (unsmoothed) rings for comparison
+                # load polygons to project
                 contour_layer = filter_result['OUTPUT']
-                contour_layer.setName(f"Raw Overflight Rings (Unsmoothed)")
+                lyr_suffix = contour_thresholds.replace(' ', '_')
+                contour_layer.setName(f"OCC_contours_{lyr_suffix}")
                 QgsProject.instance().addMapLayer(contour_layer)
