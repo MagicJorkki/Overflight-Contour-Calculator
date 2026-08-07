@@ -38,6 +38,10 @@ from qgis.core import (
     QgsWkbTypes,
     QgsMessageLog,
     QgsMapLayerProxyModel,
+    QgsCategorizedSymbolRenderer,
+    QgsRendererCategory,
+    QgsSymbol,
+    QgsStyle,
     Qgis
 )
 from PyQt5.QtCore import QVariant
@@ -267,9 +271,9 @@ class OverflightContourCalculator:
 
             contour_thresholds = self.dlg.contour_thresholds.text()
             # ['10', '50', '100']
-            contour_thresholds = contour_thresholds.replace(',', ' ').split()
+            contour_thresholds_ls = contour_thresholds.replace(',', ' ').split()
             # string for GDAL "10 50 100"
-            contour_thresholds = ' '.join(contour_thresholds)
+            contour_thresholds = ' '.join(contour_thresholds_ls)
 
             output_proj = self.dlg.output_projection.crs()
             # output_proj_epsg = output_proj.authid()
@@ -571,3 +575,38 @@ class OverflightContourCalculator:
                 lyr_suffix = contour_thresholds.replace(' ', '_')
                 contour_layer.setName(f"OCC_contours_{lyr_suffix}")
                 QgsProject.instance().addMapLayer(contour_layer)
+
+
+
+
+
+                # SYMBOLOGY/LEGEND
+                
+                categories = []
+                color_ramp = QgsStyle.defaultStyle().colorRamp('Turbo')
+                num_classes = len(contour_thresholds_ls)
+                
+                for i, val_str in enumerate(contour_thresholds_ls):
+                    val = float(val_str)
+                    
+                    # default polygon symbol
+                    symbol = QgsSymbol.defaultSymbol(contour_layer.geometryType())
+                    
+                    # pick color
+                    if color_ramp and num_classes > 1:
+                        color_value = i / (num_classes - 1)
+                        symbol.setColor(color_ramp.color(color_value))
+                    
+                    # legend text
+                    label = f"≥ {val_str}"
+                    
+                    # build the cat.
+                    category = QgsRendererCategory(val, symbol, label)
+                    categories.append(category)
+                
+                # apply to MIN_COUNT field
+                renderer = QgsCategorizedSymbolRenderer('MIN_COUNT', categories)
+                contour_layer.setRenderer(renderer)
+                
+                # refresh layer
+                contour_layer.triggerRepaint()
