@@ -1,0 +1,47 @@
+# This file contains metadata for your plugin.
+
+# This file should be included when you package your plugin.# Mandatory items:
+
+[general]
+name=Overflight Contour Calculator
+qgisMinimumVersion=3.0
+description=Calculates aircraft overflight contours and other metrics based on CAA CAP 1498.
+version=0.1
+author=Leevi Miettinen / Finavia Oyj
+email=leevi.miettinen@finavia.fi
+
+about=Calculate overflight count contours using aircraft track data and a DEM. Plugin is based on and in compliance with the "Definition of Overflight" (CAP 1498) by the UK Civil Aviation Authority (CAA).
+
+tracker=http://placeholder.com
+repository=http://placeholder.com
+# End of mandatory metadata
+
+# Recommended items:
+
+hasProcessingProvider=no
+# Uncomment the following line and add your changelog:
+# changelog=
+
+# Tags are comma separated with spaces allowed
+tags=analysis, calculator, dem, geometry, shapefile
+
+homepage=
+category=Plugins
+icon=icon.png
+# experimental flag
+experimental=True
+
+# deprecated flag (applies to the whole plugin, not just a single version)
+deprecated=False
+
+# Since QGIS 3.8, a comma separated list of plugins to be installed
+# (or upgraded) can be specified.
+# Check the documentation for more information.
+# plugin_dependencies=
+
+Category of the plugin: Raster, Vector, Database or Web
+# category=
+
+# If the plugin can run on QGIS Server.
+server=False
+
